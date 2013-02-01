@@ -1,0 +1,8 @@
+Written by Arash Sharif, released under MIT license @ http://opensource.org/licenses/MIT
+
+This is a standard maven project.  It uses the "maven-assembly-plugin" @ http://maven.apache.org/plugins/maven-assembly-plugin/ to combine all files into one jar.
+
+1.  To build install maven2 and type "mvn clean package"
+2.  In your "target" directory there should be a file called "img2grf-1.0-jar-with-dependencies.jar".  This is the file you want.  
+3.  To run just type "java -jar target/img2grf-1.0-jar-with-dependencies.jar -help" to learn how to use
+

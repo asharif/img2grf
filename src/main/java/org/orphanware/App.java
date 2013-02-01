@@ -33,6 +33,7 @@ public class App {
 		String filePath = null;
 		Boolean withLB = false;
 		Boolean invertPixels = false;
+		String outputFileName = "image";
 		
 		for (String arg : args) {
 
@@ -66,13 +67,24 @@ public class App {
 
 				invertPixels = true;
 			}
+			
+			if (arg.equals(("-o"))) {
+
+				try {
+					outputFileName = args[argIndex + 1];
+				} catch (Exception e) {
+
+					System.out.println("-o switch found but was not followed by image name");
+					System.exit(1);
+				}
+			}
 
 			argIndex++;
 		}
 
 		if (filePath != null) {
 
-			convertBMP(filePath, withLB, invertPixels);
+			convertBMP(filePath, withLB, invertPixels, outputFileName);
 			System.exit(0);
 
 		}
@@ -81,7 +93,8 @@ public class App {
 
 	}
 
-	public static void convertBMP(String filePath, Boolean withLB, Boolean invertPixels) {
+	public static void convertBMP(String filePath, Boolean withLB, 
+				       Boolean invertPixels, String outputFileName) {
 
 		FileInputStream fis;
 		try {
@@ -147,12 +160,13 @@ public class App {
 			}
 
 			int wInBytes = (int) Math.ceil(((double)w) / 8);
-			String imageTemplate = "~DGhlogo," + withoutHeaderBytes.length + "," + wInBytes + "," + byteAsString;
-			FileOutputStream fos = new FileOutputStream("image.grf");
+			String imageTemplate = "~DG" + outputFileName + "," + withoutHeaderBytes.length;
+			imageTemplate       += "," + wInBytes + "," + byteAsString;
+			FileOutputStream fos = new FileOutputStream(outputFileName + ".grf");
 			fos.write(imageTemplate.getBytes());
 			fos.close();
 
-			System.out.println("Finished!  Check for file \"image.grf\" in executing dir");
+			System.out.println("Finished!  Check for file \"" + outputFileName + ".grf\" in executing dir");
 
 
 		} catch (FileNotFoundException ex) {
@@ -184,9 +198,12 @@ public class App {
 		System.out.println("Basic Use: java -jar img2grf.jar -f {path to file}");
 		System.out.println("-----------------------------------------------------------------------------------------");
 		System.out.println("switches:\n");
+		System.out.println("required:");
 		System.out.println("-f \t-must be followed with path to the bmp image you want to encode");
+		System.out.println("optional:");
 		System.out.println("-lb\t-tells encoder to insert line break at widths.  helps reading eye with naked eye.");
-		System.out.println("-i\t-tells encoder to invert pixels");
+		System.out.println("-i \t-tells encoder to invert pixels");
+		System.out.println("-o \t-must be followed by the name of the grf file (WITHOUT EXTENTION!). Used for encoding!");
 		System.out.println("-----------------------------------------------------------------------------------------");
 		System.out.println("Source found @ https://github.com/asharif/img2grf");
 		System.out.println("-----------------------------------------------------------------------------------------");

@@ -32,6 +32,8 @@ public class App {
 		int argIndex = 0;
 		String filePath = null;
 		Boolean withLB = false;
+		Boolean invertPixels = false;
+		
 		for (String arg : args) {
 
 			if (arg.equals("-help")) {
@@ -59,13 +61,18 @@ public class App {
 
 				withLB = true;
 			}
+			
+			if (arg.equals(("-i"))) {
+
+				invertPixels = true;
+			}
 
 			argIndex++;
 		}
 
 		if (filePath != null) {
 
-			convertBMP(filePath, withLB);
+			convertBMP(filePath, withLB, invertPixels);
 			System.exit(0);
 
 		}
@@ -74,7 +81,7 @@ public class App {
 
 	}
 
-	public static void convertBMP(String filePath, Boolean withLB) {
+	public static void convertBMP(String filePath, Boolean withLB, Boolean invertPixels) {
 
 		FileInputStream fis;
 		try {
@@ -101,17 +108,20 @@ public class App {
 			byte[] withoutHeaderBytes = new byte[origBytes.length - pixeloffset];
 
 			int newByteIndex = 0;
+			
 			for (int i = pixeloffset; i < origBytes.length - pixeloffset; i++) {
 
 				withoutHeaderBytes[newByteIndex++] = origBytes[i];
 			}
-			System.out.println("pixel 0 before invert: " + withoutHeaderBytes[0]);
 
-			for (int i = 0; i < withoutHeaderBytes.length; i++) {
-				withoutHeaderBytes[i] ^= 0xFF;
+			if ( invertPixels ) {
+				
+				System.out.println("pixels inverted!");
+				for (int i = 0; i < withoutHeaderBytes.length; i++) {
+					withoutHeaderBytes[i] ^= 0xFF;
+				}
 			}
 
-			System.out.println("pixel 0 after invert: " + withoutHeaderBytes[0]);
 			String byteAsString = Hex.encodeHexString(withoutHeaderBytes);
 
 			if (withLB) {
@@ -176,6 +186,9 @@ public class App {
 		System.out.println("switches:\n");
 		System.out.println("-f \t-must be followed with path to the bmp image you want to encode");
 		System.out.println("-lb\t-tells encoder to insert line break at widths.  helps reading eye with naked eye.");
+		System.out.println("-i\t-tells encoder to invert pixels");
+		System.out.println("-----------------------------------------------------------------------------------------");
+		System.out.println("Source found @ https://github.com/asharif/img2grf");
 		System.out.println("-----------------------------------------------------------------------------------------");
 	}
 }

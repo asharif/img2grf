@@ -121,10 +121,18 @@ public class App {
 			byte[] withoutHeaderBytes = new byte[origBytes.length - pixeloffset];
 
 			int newByteIndex = 0;
+			int byteW =  (int) Math.ceil(((double)w) / 8);
 			
-			for (int i = pixeloffset; i < origBytes.length - pixeloffset; i++) {
+			for (int i = origBytes.length-1; i >= pixeloffset; i--) {
 
-				withoutHeaderBytes[newByteIndex++] = origBytes[i];
+				int tmp = i - (byteW-1);
+				
+				for( int j = tmp; j < tmp + byteW; j++ ) {
+
+					withoutHeaderBytes[newByteIndex++] = origBytes[j];
+
+				}
+				i = tmp;
 			}
 
 			if ( invertPixels ) {

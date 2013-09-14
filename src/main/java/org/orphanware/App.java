@@ -92,16 +92,18 @@ public class App {
 
 		if (filePath != null) {
 
-			convertBMP(filePath, withLB, invertPixels, outputFileName);
-			System.exit(0);
+			convert(filePath, withLB, invertPixels, outputFileName);
+			System.exit(1);
 
 		}
-
+                
+                
+                System.out.println("error!  input file not found!");
 
 
 	}
 
-	public static void convertBMP(String filePath, Boolean withLB, 
+	public static void convert(String filePath, Boolean withLB, 
 				       Boolean invertPixels, String outputFileName) {
 
 		FileImageInputStream fis;
@@ -116,8 +118,8 @@ public class App {
                         
                         if(!readers.hasNext()) {
                             
-                            System.out.println("Sorry file type not recognised.  Try another file type like JPEG");
-                            System.exit(0);
+                            System.out.println("Sorry file type not recognised.  Try another file type like PNG");
+                            System.exit(1);
                             
                         }
                         
@@ -137,13 +139,11 @@ public class App {
                         
                         img.getRGB(0, 0, w, h, pixels, 0, w);
                         
-                        ByteBuffer byteBuffer = ByteBuffer.allocate(pixels.length * 4);        
+                        ByteBuffer byteBuffer = ByteBuffer.allocate(pixels.length * 4); //4 bytes per pixel (argb)        
                         IntBuffer intBuffer = byteBuffer.asIntBuffer();
-                        intBuffer.put(pixels);
-
-                        
-                        //pixels = img.getData().getPixels(0, 0, img.getWidth(), img.getHeight(), pixels);
-                        byte[] imageBytes = byteBuffer.array();//((DataBufferByte)img.getRaster().getDataBuffer()).getData();
+                        intBuffer.put(pixels);                        
+                       
+                        byte[] imageBytes = byteBuffer.array();
                          
                         System.out.println("pixel array size is: " + pixels.length);
                         System.out.println("byte array size :" + imageBytes.length);
@@ -159,20 +159,18 @@ public class App {
                         
                         
                         String byteAsString = Hex.encodeHexString(imageBytes);
-                        
-                        System.out.println("hex string size is: " + byteAsString.toCharArray().length);
+                        char[] bytesAsCharArr = byteAsString.toCharArray();
+                        System.out.println("hex string size is: " + bytesAsCharArr.length);
+                        //pixel width * 4 (as there is 4 bytes per pixel) * 2 (as there is 2 hex chars per byte)
+                        int lengthInChar = w * 4 * 2 ;
 
 			if (withLB) {
-				
-				char[] bytesAsCharArr = byteAsString.toCharArray();
 
-				int lineBreakCount = img.getWidth() * 4 ;
-
-				System.out.println("Adding line break every: " + lineBreakCount + " chars");
+				System.out.println("Adding line break every: " + lengthInChar + " chars");
 				StringBuilder lineBreakedStr = new StringBuilder();
 				for (int i = 0; i < bytesAsCharArr.length; i++) {
 
-					if (i % lineBreakCount == 0) {
+					if (i % lengthInChar == 0) {
 
 						lineBreakedStr.append("\n");
 					}
@@ -184,9 +182,9 @@ public class App {
 				byteAsString = lineBreakedStr.toString();
 			}
 
-			int wInBytes = (int) Math.ceil(((double)img.getWidth()) / 8);
+                        int byteWidth = w * 4; //pixel width * 4 bytes per pixel
 			String imageTemplate = "~DG" + outputFileName + "," + imageBytes.length;
-			imageTemplate       += "," + wInBytes + "," + byteAsString;
+			imageTemplate       += "," + byteWidth + "," + byteAsString;
 			FileOutputStream fos = new FileOutputStream(outputFileName + ".grf");
 			fos.write(imageTemplate.getBytes());
 			fos.close();
@@ -194,82 +192,7 @@ public class App {
 			System.out.println("Finished!  Check for file \"" + outputFileName + ".grf\" in executing dir");
                         
                         
-			/*int h = img.getHeight();
-			int w = img.getWidth();
-			byte[] origBytes = readFully(fis);
-			System.out.println("height: " + h + " width: " + w + " total byte length: " + origBytes.length);
-
-			int pixeloffset = origBytes[10] + origBytes[11] + origBytes[12] + origBytes[13];
-			if (pixeloffset == 62) {
-
-				System.out.println("pixel offset: " + pixeloffset);
-
-			} else {
-
-				System.out.println("pixel offset (WARNING! NOT THE DEFAULT OF 62): " + pixeloffset);
-
-			}
-
-
-
-			byte[] withoutHeaderBytes = new byte[origBytes.length - pixeloffset];
-
-			int newByteIndex = 0;
-			int byteW =  (int) Math.ceil(((double)w) / 8);
 			
-			for (int i = origBytes.length-1; i >= pixeloffset; i--) {
-
-				int tmp = i - (byteW-1);
-				
-				for( int j = tmp; j < tmp + byteW; j++ ) {
-
-					withoutHeaderBytes[newByteIndex++] = origBytes[j];
-
-				}
-				i = tmp;
-			}
-
-			if ( invertPixels ) {
-				
-				System.out.println("pixels inverted!");
-				for (int i = 0; i < withoutHeaderBytes.length; i++) {
-					withoutHeaderBytes[i] ^= 0xFF;
-				}
-			}
-
-			String byteAsString = Hex.encodeHexString(withoutHeaderBytes);
-
-			if (withLB) {
-				
-				char[] bytesAsCharArr = byteAsString.toCharArray();
-
-				int lineBreakCount = (int) Math.ceil(((double)w) / 4);
-
-				System.out.println("Adding line break every: " + lineBreakCount + " bytes");
-				StringBuilder lineBreakedStr = new StringBuilder();
-				for (int i = 0; i < bytesAsCharArr.length; i++) {
-
-					if (i % lineBreakCount == 0) {
-
-						lineBreakedStr.append("\n");
-					}
-
-					lineBreakedStr.append(bytesAsCharArr[i]);
-
-				}
-
-				byteAsString = lineBreakedStr.toString();
-			}
-
-			int wInBytes = (int) Math.ceil(((double)w) / 8);
-			String imageTemplate = "~DG" + outputFileName + "," + withoutHeaderBytes.length;
-			imageTemplate       += "," + wInBytes + "," + byteAsString;
-			FileOutputStream fos = new FileOutputStream(outputFileName + ".grf");
-			fos.write(imageTemplate.getBytes());
-			fos.close();
-
-			System.out.println("Finished!  Check for file \"" + outputFileName + ".grf\" in executing dir");*/
-
 
 		} catch (FileNotFoundException ex) {
 			System.out.println("Error.  No file found at path: " + filePath);
@@ -280,20 +203,11 @@ public class App {
 		}
 	}
 
-	public static byte[] readFully(InputStream stream) throws IOException {
-		byte[] buffer = new byte[8192];
-		ByteArrayOutputStream baos = new ByteArrayOutputStream();
-
-		int bytesRead;
-		while ((bytesRead = stream.read(buffer)) != -1) {
-			baos.write(buffer, 0, bytesRead);
-		}
-		return baos.toByteArray();
-	}
-
+	
 	public static void printHelp() {
 
-		System.out.println("\nZebra BMP to GRF encoder.");
+                System.out.println("\nimg2grf v2.0.0 ");
+		System.out.println("Zebra Image to GRF encoder. (supported file types: png, gif, bmp, jpeg) ");
 		System.out.println("Written by Arash Sharif");
 		System.out.println("Released under MIT license @ http://opensource.org/licenses/MIT");
 		System.out.println("-----------------------------------------------------------------------------------------");
@@ -301,11 +215,11 @@ public class App {
 		System.out.println("-----------------------------------------------------------------------------------------");
 		System.out.println("switches:\n");
 		System.out.println("required:");
-		System.out.println("-f \t-must be followed with path to the bmp image you want to encode");
-		System.out.println("optional:");
-		System.out.println("-lb\t-tells encoder to insert line break at widths.  helps reading eye with naked eye.");
+		System.out.println("\n-f \t-must be followed with path to the bmp image you want to encode");
+		System.out.println("\noptional:");
+		System.out.println("\n-lb\t-tells encoder to insert line break at widths.  helps reading GRF ASCII with the naked eye");
 		System.out.println("-i \t-tells encoder to invert pixels");
-		System.out.println("-o \t-must be followed by the name of the grf file (WITHOUT EXTENTION!). Used for encoding!");
+		System.out.println("-o \t-must be followed by the name of the GRF file (WITHOUT EXTENTION!). Used for encoding!  If left blank the name \"image\" will be used");
 		System.out.println("-----------------------------------------------------------------------------------------");
 		System.out.println("Source found @ https://github.com/asharif/img2grf");
 		System.out.println("-----------------------------------------------------------------------------------------");

@@ -2,6 +2,7 @@ package org.orphanware;
 
 import com.sun.org.apache.bcel.internal.util.ByteSequence;
 import java.awt.image.BufferedImage;
+import java.awt.image.DataBufferByte;
 import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.FileInputStream;
@@ -9,9 +10,16 @@ import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.nio.ByteBuffer;
+import java.nio.IntBuffer;
+import java.util.Iterator;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import javax.imageio.ImageIO;
+import javax.imageio.ImageReader;
+import javax.imageio.stream.FileImageInputStream;
+import javax.imageio.stream.ImageInputStream;
+import javax.imageio.stream.ImageInputStreamImpl;
 import org.apache.commons.codec.binary.Hex;
 
 /**
@@ -96,11 +104,97 @@ public class App {
 	public static void convertBMP(String filePath, Boolean withLB, 
 				       Boolean invertPixels, String outputFileName) {
 
-		FileInputStream fis;
+		FileImageInputStream fis;
+                BufferedImage img;
 		try {
-			fis = new FileInputStream(filePath);
-			BufferedImage img = ImageIO.read(new File(filePath));
-			int h = img.getHeight();
+                    
+                        
+			fis = new FileImageInputStream(new File(filePath));
+
+                        
+                        Iterator<ImageReader> readers = ImageIO.getImageReaders(fis);
+                        
+                        if(!readers.hasNext()) {
+                            
+                            System.out.println("Sorry file type not recognised.  Try another file type like JPEG");
+                            System.exit(0);
+                            
+                        }
+                        
+                        ImageReader reader = readers.next();
+                        
+                        System.out.println("image type is :" + reader.getFormatName());
+                        reader.setInput(fis);
+                        img = reader.read(0);
+                        
+                        int w = img.getWidth();
+                        int h = img.getHeight();
+                        
+                        System.out.println("image width is: " + w);
+                        System.out.println("image height is: " + h);
+                        
+                        int[] pixels = new int[w * h];
+                        
+                        img.getRGB(0, 0, w, h, pixels, 0, w);
+                        
+                        ByteBuffer byteBuffer = ByteBuffer.allocate(pixels.length * 4);        
+                        IntBuffer intBuffer = byteBuffer.asIntBuffer();
+                        intBuffer.put(pixels);
+
+                        
+                        //pixels = img.getData().getPixels(0, 0, img.getWidth(), img.getHeight(), pixels);
+                        byte[] imageBytes = byteBuffer.array();//((DataBufferByte)img.getRaster().getDataBuffer()).getData();
+                         
+                        System.out.println("pixel array size is: " + pixels.length);
+                        System.out.println("byte array size :" + imageBytes.length);
+                        
+                        
+                        if ( invertPixels ) {
+				
+				System.out.println("pixels inverted!");
+				for (int i = 0; i < imageBytes.length; i++) {
+					imageBytes[i] ^= 0xFF;
+				}
+			}
+                        
+                        
+                        String byteAsString = Hex.encodeHexString(imageBytes);
+                        
+                        System.out.println("hex string size is: " + byteAsString.toCharArray().length);
+
+			if (withLB) {
+				
+				char[] bytesAsCharArr = byteAsString.toCharArray();
+
+				int lineBreakCount = img.getWidth() * 4 ;
+
+				System.out.println("Adding line break every: " + lineBreakCount + " chars");
+				StringBuilder lineBreakedStr = new StringBuilder();
+				for (int i = 0; i < bytesAsCharArr.length; i++) {
+
+					if (i % lineBreakCount == 0) {
+
+						lineBreakedStr.append("\n");
+					}
+
+					lineBreakedStr.append(bytesAsCharArr[i]);
+
+				}
+
+				byteAsString = lineBreakedStr.toString();
+			}
+
+			int wInBytes = (int) Math.ceil(((double)img.getWidth()) / 8);
+			String imageTemplate = "~DG" + outputFileName + "," + imageBytes.length;
+			imageTemplate       += "," + wInBytes + "," + byteAsString;
+			FileOutputStream fos = new FileOutputStream(outputFileName + ".grf");
+			fos.write(imageTemplate.getBytes());
+			fos.close();
+
+			System.out.println("Finished!  Check for file \"" + outputFileName + ".grf\" in executing dir");
+                        
+                        
+			/*int h = img.getHeight();
 			int w = img.getWidth();
 			byte[] origBytes = readFully(fis);
 			System.out.println("height: " + h + " width: " + w + " total byte length: " + origBytes.length);
@@ -174,7 +268,7 @@ public class App {
 			fos.write(imageTemplate.getBytes());
 			fos.close();
 
-			System.out.println("Finished!  Check for file \"" + outputFileName + ".grf\" in executing dir");
+			System.out.println("Finished!  Check for file \"" + outputFileName + ".grf\" in executing dir");*/
 
 
 		} catch (FileNotFoundException ex) {

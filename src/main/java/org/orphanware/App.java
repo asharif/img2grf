@@ -135,56 +135,54 @@ public class App {
                         System.out.println("image width is: " + w);
                         System.out.println("image height is: " + h);
                         
-                        int[] pixels = new int[w * h];
+                        char darkChar = '1';
+                        char lightChar = '0';
                         
-                        img.getRGB(0, 0, w, h, pixels, 0, w);
+                        if( invertPixels ) {
+                            
+                            darkChar = '0';
+                            lightChar = '1';
+                        }
                         
-                        ByteBuffer byteBuffer = ByteBuffer.allocate(pixels.length * 4); //4 bytes per pixel (argb)        
-                        IntBuffer intBuffer = byteBuffer.asIntBuffer();
-                        intBuffer.put(pixels);                        
-                       
-                        byte[] imageBytes = byteBuffer.array();
-                         
-                        System.out.println("pixel array size is: " + pixels.length);
-                        System.out.println("byte array size :" + imageBytes.length);
+                        StringBuilder out = new StringBuilder();
                         
                         
-                        if ( invertPixels ) {
-				
-				System.out.println("pixels inverted!");
-				for (int i = 0; i < imageBytes.length; i++) {
-					imageBytes[i] ^= 0xFF;
-				}
-			}
                         
+                        for( int y = 0; y < h; ++y ) {
+                            
+                            for( int x = 0; x < w; ++x ) {
+                                
+                                int argb = img.getRGB(x, y);
+                                
+                                int r = (argb >> 16) & 0xFF;
+                                int g = (argb >> 8)  & 0xFF;
+                                int b = argb & 0xFF; 
+                                
+                                float darkness = (r + g + b) / 3;
+                                
+                                
+                                if( Float.valueOf(darkness).compareTo(127f) > 0 ) {
+                                    
+                                    out.append(lightChar);
+                                } else {
+                                    
+                                    out.append(darkChar);
+                                }
+                                
+                                
+                            }
+                            
+                            if( withLB ) {
+                                
+                                out.append("\n");
+                            }
+                            
+                        }
                         
-                        String byteAsString = Hex.encodeHexString(imageBytes);
-                        char[] bytesAsCharArr = byteAsString.toCharArray();
-                        System.out.println("hex string size is: " + bytesAsCharArr.length);
-                        //pixel width * 4 (as there is 4 bytes per pixel) * 2 (as there is 2 hex chars per byte)
-                        int lengthInChar = w * 4 * 2 ;
+                        String outStr = out.toString();
 
-			if (withLB) {
-
-				System.out.println("Adding line break every: " + lengthInChar + " chars");
-				StringBuilder lineBreakedStr = new StringBuilder();
-				for (int i = 0; i < bytesAsCharArr.length; i++) {
-
-					if (i % lengthInChar == 0) {
-
-						lineBreakedStr.append("\n");
-					}
-
-					lineBreakedStr.append(bytesAsCharArr[i]);
-
-				}
-
-				byteAsString = lineBreakedStr.toString();
-			}
-
-                        int byteWidth = w * 4; //pixel width * 4 bytes per pixel
-			String imageTemplate = "~DG" + outputFileName + "," + imageBytes.length;
-			imageTemplate       += "," + byteWidth + "," + byteAsString;
+			String imageTemplate = "~DG" + outputFileName + "," + outStr.toCharArray().length;
+			imageTemplate       += "," + w + "," + outStr;
 			FileOutputStream fos = new FileOutputStream(outputFileName + ".grf");
 			fos.write(imageTemplate.getBytes());
 			fos.close();
